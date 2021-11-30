@@ -22,38 +22,71 @@ const logger = winston.createLogger({
   transports: [new winston.transports.Console()]
 });
 
+// DB
+
+/*
+{
+  name: ben,
+  challenged: 9fa83nk
+}
+*/
 let users = {};
 
 // Configure sockets
 io.on("connection", socket => {
   logger.info("A user has connected");
-  socket.emit("users changed", users);
+  socket.emit(
+    "users",
+    Object.keys(users).map(id => [id, users[id]["name"]]) // [id, name]
+  );
 
   socket.on("join", name => {
-    logger.info(`User "${name}" has joined`);
-    users[socket.id] = name;
-    io.emit("users changed", users);
+    logger.info(`User: ${name} has joined`);
+    users[socket.id] = { name };
+    io.emit(
+      "users",
+      Object.keys(users).map(id => [id, users[id]["name"]]) // [id, name]
+    );
   });
 
-  socket.on("leave", name => {
-    logger.info(`User "${name}" has left`);
+  socket.on("leave", () => {
+    logger.info(`User: ${users[socket.id]["name"]} has left`);
     delete users[socket.id];
-    io.emit("users changed", users);
+    io.emit(
+      "users",
+      Object.keys(users).map(id => [id, users[id]["name"]]) // [id, name]
+    );
   });
 
-  // const chess = new Chess();
+  socket.on("challenge", id => {
+    logger.info(
+      `User: ${users[socket.id]["name"]} has challenged user: ${
+        users[id]["name"]
+      }`
+    );
+    users[socket.id]["challenged"] = id;
+    socket.to(id).emit("challenged", users[socket.id]["name"]);
+    socket.emit("challenge", id);
+  });
 
-  // socket.on("move", move => {
-  //   logger.info("User makes move: " + move);
-  //   const [sourceSquare, targetSquare] = move.split(":");
-  //   chess.move({ from: sourceSquare, to: targetSquare });
-  //   io.emit("fen", chess.fen());
-  // });
+  socket.on("revoke challenge", id => {
+    logger.info(
+      `User: ${users[socket.id]["name"]} has revoked challenge for user: ${
+        users[id]["name"]
+      }`
+    );
+    delete users[socket.id]["challenged"];
+    socket.to(id).emit("challenge revoked", users[socket.id]["name"]);
+    socket.emit("challenge", null);
+  });
 
   socket.on("disconnect", () => {
     logger.info("A user has disconnected");
     delete users[socket.id];
-    io.emit("users changed", users);
+    io.emit(
+      "users",
+      Object.keys(users).map(id => [id, users[id]["name"]]) // [id, name]
+    );
   });
 });
 

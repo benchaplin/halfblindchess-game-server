@@ -8,10 +8,10 @@ function App() {
   return (
     <div className="container-fluid">
       <div className="row">
-        <div className="col-3">
+        <div className="col-4">
           <UserTable socket={socket} />
         </div>
-        <div className="col-9">
+        <div className="col-8">
           <Chess socket={socket} />
         </div>
       </div>
