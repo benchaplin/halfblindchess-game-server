@@ -12,7 +12,7 @@ const io = new Server(server, {
     },
 });
 const { v4: uuidv4 } = require("uuid");
-const { Chess } = require("chess.js");
+const { HalfBlindChess } = require("halfblindchess");
 
 const myFormat = printf(({ level, message, timestamp }) => {
     return `${timestamp} ${level}: ${message}`;
@@ -97,7 +97,7 @@ io.on("connection", socket => {
         socket.to(id).emit("challenge", null);
 
         const newId = uuidv4();
-        const newGame = new Chess();
+        const newGame = new HalfBlindChess();
         games[newId] = {
             game: newGame,
             players: { w: users[socket.id]["name"], b: users[id]["name"] },
@@ -125,20 +125,21 @@ io.on("connection", socket => {
             )} has been attempted in game: ${gameId}`
         );
         if (
-            (games[gameId]["game"].turn() === "w" &&
+            /*(games[gameId]["game"].turn() === "w" &&
                 games[gameId]["players"]["w"] === users[socket.id]["name"]) ||
             (games[gameId]["game"].turn() === "b" &&
-                games[gameId]["players"]["b"] === users[socket.id]["name"])
+                games[gameId]["players"]["b"] === users[socket.id]["name"])*/
+            true
         ) {
             games[gameId]["game"].move(move);
             io.to(gameId).emit("chess game", {
                 id: gameId,
                 players: games[gameId]["players"],
                 state: {
-                    loser: games[gameId]["game"].in_checkmate()
+                    loser: games[gameId]["game"].inCheckmate()
                         ? games[gameId]["game"].turn()
                         : null,
-                    draw: games[gameId]["game"].in_draw(),
+                    draw: games[gameId]["game"].inDraw(),
                 },
                 fen: games[gameId]["game"].fen(),
             });
